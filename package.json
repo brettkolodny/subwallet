@@ -1,0 +1,20 @@
+{
+  "name": "subwallet",
+  "version": "0.1.0",
+  "main": "src/index.js",
+  "repository": "https://github.com/brettkolodny/subwallet.git",
+  "author": "Brett Kolodny <brettkolodny@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "start": "yarn parcel serve public/index.html --public-url /",
+    "build": "parcel build public/index.html --public-url ./"
+  },
+  "dependencies": {
+    "@polkadot/api": "^3.10.2",
+    "react": "^17.0.1",
+    "react-dom": "^17.0.1"
+  },
+  "devDependencies": {
+    "parcel-bundler": "^1.12.4"
+  }
+}
