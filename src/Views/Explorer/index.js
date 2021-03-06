@@ -33,7 +33,6 @@ function BlockNumbers(props) {
   const [finalizedBlock, setFinalizedBlock] = useState("Loading...");
 
   const incrementTimer = () => {
-    console.log("timer");
     setTime((time) => {
       return time + 1;
     });

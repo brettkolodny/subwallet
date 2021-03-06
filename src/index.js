@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom";
 import { ApiPromise, WsProvider } from "@polkadot/api";
 import Sidebar from "./Components/Sidebar";
+import NetworkPicker from "./Components/NetworkPicker";
+import AccountPicker from "./Components/AccountPicker";
 import Explorer from "./Views/Explorer";
 import Connecting from "./Views/Connecting";
 
@@ -21,10 +23,18 @@ function App() {
     connect();
   }, []);
 
-  return (
+  return api ? (
     <div id="app">
+      <NetworkPicker />
+      <AccountPicker api={api} />
       <Sidebar />
-      {api ? <Explorer api={api} /> : <Connecting />}
+      <Explorer api={api} />
+    </div>
+  ) : (
+    <div id="app">
+      <NetworkPicker />
+      <Sidebar />
+      <Connecting />
     </div>
   );
 }

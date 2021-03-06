@@ -11,8 +11,12 @@
   },
   "dependencies": {
     "@polkadot/api": "^3.10.2",
+    "@polkadot/extension-dapp": "^0.37.2",
+    "@polkadot/react-identicon": "^0.71.1",
+    "add": "^2.0.6",
     "react": "^17.0.1",
-    "react-dom": "^17.0.1"
+    "react-dom": "^17.0.1",
+    "yarn": "^1.22.10"
   },
   "devDependencies": {
     "parcel-bundler": "^1.12.4",

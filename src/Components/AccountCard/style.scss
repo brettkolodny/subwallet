@@ -1,0 +1,21 @@
+.account-card {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  height: 48px;
+  min-width: 128px;
+
+  background-color: #cbd2d9;
+  border-radius: 5px;
+
+  font-family: sans-serif;
+  font-size: 20px;
+  color: #1f2933;
+
+  margin: 8px;
+}
+
+.account-card:hover {
+  cursor: pointer;
+}
