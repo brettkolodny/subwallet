@@ -33,11 +33,12 @@ function BlockNumbers(props) {
   const [finalizedBlock, setFinalizedBlock] = useState("Loading...");
 
   const incrementTimer = () => {
-    setTime((time) => {
-      return time + 1;
-    });
+    const timeDiv = document.getElementById("time");
 
-    setTimeout(incrementTimer, 1000);
+    if (timeDiv) {
+      timeDiv.innerText = parseInt(timeDiv.innerText.split("")[0]) + 1 + "s";
+      setTimeout(incrementTimer, 1000);
+    }
   };
 
   const resetCircle = () => {
@@ -48,18 +49,29 @@ function BlockNumbers(props) {
   };
 
   useEffect(() => {
-    api.query.system.number(async (blockNumber) => {
-      const hash = await api.rpc.chain.getFinalizedHead();
-      const finalizedBlock = await api.rpc.chain.getBlock(hash);
-      const finBlockNum = finalizedBlock.block.header.number.toHuman();
+    let unsubscribe;
 
-      setFinalizedBlock(() => finBlockNum);
-      setBestBlock(() => blockNumber.toHuman());
-      setTime(0);
-      resetCircle();
-    });
+    api.query.system
+      .number(async (blockNumber) => {
+        const hash = await api.rpc.chain.getFinalizedHead();
+        const finalizedBlock = await api.rpc.chain.getBlock(hash);
+        const finBlockNum = finalizedBlock.block.header.number.toHuman();
+
+        setFinalizedBlock(() => finBlockNum);
+        setBestBlock(() => blockNumber.toHuman());
+
+        const timeDiv = document.getElementById("time");
+        if (timeDiv) timeDiv.innerText = "0s";
+
+        resetCircle();
+      })
+      .then((unsub) => {
+        unsubscribe = unsub;
+      });
 
     setTimeout(incrementTimer, 1000);
+
+    return () => unsubscribe && unsubscribe();
   }, []);
 
   return (
@@ -76,7 +88,7 @@ function BlockNumbers(props) {
       </div>
       <div id="block-time">
         {circle}
-        <div id="time">{time}s</div>
+        <div id="time">0s</div>
       </div>
     </div>
   );
@@ -93,8 +105,8 @@ function RecentBlocks(props) {
     return blocks;
   };
 
-  const updateBlocks = () => {
-    api.query.system.number((blockNumber) => {
+  const updateBlocks = async () => {
+    const unsub = await api.query.system.number((blockNumber) => {
       const address = "13arSPsihdfLnYzKhwXTJQAjejxTdbXwpMKUeTUq45mvR5K9";
       let newBlocks =
         blocksRef.current.length == 6
@@ -108,10 +120,17 @@ function RecentBlocks(props) {
 
       setBlocks(() => [...newBlocks]);
     });
+
+    return unsub;
   };
 
   useEffect(() => {
-    updateBlocks();
+    let unsubscribe;
+    updateBlocks().then((unsub) => {
+      unsubscribe = unsub;
+    });
+
+    return () => unsubscribe && unsubscribe();
   }, []);
 
   return (
@@ -149,20 +168,26 @@ function RecentEvents(props) {
   eventsRef.current = events;
 
   useEffect(() => {
-    api.query.system.events((events) => {
-      let newEvents = [...eventsRef.current];
-      for (let e of events) {
-        let eventHuman = e.toHuman().event;
-        eventHuman.key = nextKey++;
+    let unsubscribe;
 
-        if (eventHuman.method == "Transfer") {
-          newEvents.unshift(eventHuman);
+    api.query.system
+      .events((events) => {
+        let newEvents = [...eventsRef.current];
+        for (let e of events) {
+          let eventHuman = e.toHuman().event;
+          eventHuman.key = nextKey++;
+
+          if (eventHuman.method == "Transfer") {
+            newEvents.unshift(eventHuman);
+          }
         }
-      }
 
-      newEvents = newEvents.length > 5 ? newEvents.slice(0, 5) : newEvents;
-      setEvents(() => newEvents);
-    });
+        newEvents = newEvents.length > 5 ? newEvents.slice(0, 5) : newEvents;
+        setEvents(() => newEvents);
+      })
+      .then((unsub) => (unsubscribe = unsub));
+
+    return () => unsubscribe && unsubscribe();
   }, []);
 
   return (
