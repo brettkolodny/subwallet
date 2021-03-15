@@ -1,0 +1,43 @@
+.tx-card {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+
+  width: 448px;
+
+  margin: 4px 0 4px 0;
+
+  .tx-info {
+    display: flex;
+    flex-direction: row;
+
+    img {
+      margin-left: 8px;
+      margin-right: 8px;
+    }
+
+    .tx-info-text {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+
+      .amount {
+        font-family: sans-serif;
+        font-size: 16px;
+        color: #1f2933;
+      }
+
+      .account {
+        font-family: sans-serif;
+        font-size: 12px;
+        color: #7b8794;
+      }
+    }
+  }
+
+  a {
+    margin-left: 8px;
+    margin-right: 8px;
+  }
+}

@@ -6,6 +6,7 @@ import NetworkPicker from "./Components/NetworkPicker";
 import AccountPicker from "./Components/AccountPicker";
 import Explorer from "./Views/Explorer";
 import Connecting from "./Views/Connecting";
+import Wallet from "./Views/Wallet";
 import networks from "./networks";
 
 import "regenerator-runtime/runtime";
@@ -13,6 +14,8 @@ import "regenerator-runtime/runtime";
 function App() {
   const [api, setApi] = useState(null);
   const [network, setNetwork] = useState(networks[0]);
+  const [page, setPage] = useState("explorer");
+  const [account, setAccount] = useState(null);
 
   const connect = async () => {
     setApi(null);
@@ -33,13 +36,14 @@ function App() {
         setNetwork={setNetwork}
         network={network}
       />
-      <AccountPicker api={api} />
-      <Sidebar />
-      <Explorer api={api} />
+      <AccountPicker api={api} setAccount={setAccount} />
+      <Sidebar setPage={setPage} />
+      {page == "explorer" ? <Explorer api={api} /> : null}
+      {page == "wallet" ? <Wallet api={api} account={account.address} /> : null}
     </div>
   ) : (
     <div id="app">
-      <Sidebar />
+      <Sidebar setPage={setPage} />
       <Connecting />
     </div>
   );

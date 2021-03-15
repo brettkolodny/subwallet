@@ -1,0 +1,50 @@
+#wallet {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  width: 824px;
+  height: 640px;
+
+  border-radius: 0px 10px 10px 0px;
+  background-color: #e4e7eb;
+
+  #balance-info {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+    align-items: center;
+
+    width: 512px;
+
+    .balance-card {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+
+      border-radius: 5px;
+
+      width: 128px;
+      height: 64px;
+
+      background-color: #bed0f7;
+
+      filter: drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.12));
+      box-shadow: 0px 3px 6px rgba(0, 0, 0, 0.15);
+
+      .amount {
+        font-family: sans-serif;
+        font-size: 30px;
+        color: #19216c;
+      }
+
+      .label {
+        font-family: sans-serif;
+        font-size: 12px;
+        color: #52606d;
+      }
+    }
+  }
+}

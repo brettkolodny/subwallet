@@ -27,6 +27,7 @@ export default function AccountPicker(props) {
     }
 
     setCurrentAccount(account);
+    setAccount(account);
     setShowAccountList(false);
   };
 
@@ -46,6 +47,7 @@ export default function AccountPicker(props) {
 
       setAccounts(allAccounts);
       setCurrentAccount(allAccounts[0]);
+      setAccount(allAccounts[0]);
     };
 
     setup();
