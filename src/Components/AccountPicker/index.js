@@ -35,6 +35,7 @@ export default function AccountPicker(props) {
     const setup = async () => {
       await web3Enable("Subwallet");
       const allAccounts = await web3Accounts();
+      console.log(allAccounts);
 
       const balance = (await api.query.system.account(allAccounts[0].address))
         .data.free;
