@@ -1,52 +1,40 @@
-import React, { useEffect, useState } from "react";
-import ReactDOM from "react-dom";
+import { Elm } from "./Main.elm";
 import { ApiPromise, WsProvider } from "@polkadot/api";
-import Sidebar from "./Components/Sidebar";
-import NetworkPicker from "./Components/NetworkPicker";
-import AccountPicker from "./Components/AccountPicker";
-import Explorer from "./Views/Explorer";
-import Connecting from "./Views/Connecting";
-import Wallet from "./Views/Wallet";
-import networks from "./networks";
+import 'regenerator-runtime/runtime'
 
-import "regenerator-runtime/runtime";
+const iconExplorer = require("../assets/icon-explorer.svg");
+const iconWallet = require("../assets/icon-wallet.svg");
+const iconContacts = require("../assets/icon-contacts.svg");
+const iconGovernance = require("../assets/icon-governance.svg");
 
-function App() {
-  const [api, setApi] = useState(null);
-  const [network, setNetwork] = useState(networks[0]);
-  const [page, setPage] = useState("explorer");
-  const [account, setAccount] = useState(null);
-
-  const connect = async () => {
-    setApi(null);
-    const wsProvider = new WsProvider(network.endpoint);
-    const newApi = await ApiPromise.create({ provider: wsProvider });
-
-    setApi(() => newApi);
+async function start() {
+  const wsProvider = new WsProvider('wss://rpc.polkadot.io');
+  const api = await ApiPromise.create({ provider: wsProvider });
+  
+  const assets = {
+    iconExplorer: iconExplorer,
+    iconWallet: iconWallet,
+    iconContacts: iconContacts,
+    iconGovernance: iconGovernance
   };
-
-  useEffect(() => {
-    connect();
-  }, [network]);
-
-  return api ? (
-    <div id="app">
-      <NetworkPicker
-        networks={networks}
-        setNetwork={setNetwork}
-        network={network}
-      />
-      <AccountPicker api={api} setAccount={setAccount} />
-      <Sidebar setPage={setPage} />
-      {page == "explorer" ? <Explorer api={api} /> : null}
-      {page == "wallet" ? <Wallet api={api} account={account.address} /> : null}
-    </div>
-  ) : (
-    <div id="app">
-      <Sidebar setPage={setPage} />
-      <Connecting />
-    </div>
-  );
+  
+  const app = Elm.Main.init({
+    node: document.getElementById("main"),
+    flags: assets
+  })
+  
+  const unsub = await api.query.system.number(async (blockNumber) => {
+    const hash = await api.rpc.chain.getFinalizedHead();
+    const finalizedBlock = await api.rpc.chain.getBlock(hash);
+    const finBlockNum = finalizedBlock.block.header.number.toHuman();
+  
+    app.ports.newBlocks.send(
+      { 
+        latest: blockNumber.toHuman(), 
+        finalized: finBlockNum,
+        author: "12345"
+      });
+  });
 }
 
-ReactDOM.render(<App />, document.getElementById("root"));
+start();
