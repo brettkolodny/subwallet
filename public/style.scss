@@ -42,47 +42,102 @@ body {
   }
 }
 
-.block-number {
-  font-family: sans-serif;
-  font-size: 48px;
-  color: #1f2933;
-
+#explorer {
+  width: 824px;
+  height: 640px;
+  border-radius: 0px 10px 10px 0px;
+  background-color: #e4e7eb;
+  .block-number {
+    font-family: sans-serif;
+    font-size: 48px;
+    color: #1f2933;
+  }
   .label {
     font-family: sans-serif;
     font-size: 18px;
     color: #52606d;
   }
+  #block-info {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-evenly;
+  }
 }
-
+#block-numbers-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  #block-numbers {
+    display: flex;
+    flex-direction: column;
+    justify-content: left;
+    margin: 34px;
+    div {
+      margin-bottom: 16px;
+    }
+  }
+  #block-time {
+    width: 100px;
+    height: 100px;
+    margin: 34px;
+    #time {
+      z-index: 2;
+      position: relative;
+      bottom: 65px;
+      left: 38px;
+      font-size: 24px;
+      font-family: sans-serif;
+    }
+  }
+}
 #recent-blocks {
   display: flex;
   flex-direction: column;
+  //   justify-content:
   align-items: flex-start;
   width: 340px;
   height: 384px;
   border-radius: 5px;
   background-color: #52606d;
-
   .block {
     display: flex;
     flex-direction: column;
     justify-content: left;
+    // padding: 16px;
     margin-left: 4px;
     margin-top: 8px;
     padding-bottom: 4px;
     margin-bottom: 8px;
     border-bottom: solid 1px #98aeeb;
-
     .block-number {
       font-family: sans-serif;
       font-size: 24px;
       color: #e0e8f9;
     }
-    
     .address {
       font-family: sans-serif;
       font-size: 12px;
       color: #cbd2d9;
     }
   }
+}
+#recent-events {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  align-items: center;
+  height: 384px;
+  width: 310px;
+}
+@keyframes dash {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.path {
+  stroke-dasharray: 300;
+  stroke-dashoffset: 300;
+  animation: dash 6s linear forwards;
 }

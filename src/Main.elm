@@ -170,21 +170,28 @@ viewExplorerPage model =
   div 
     [ id "explorer", class "view" ] 
     [ viewLatestBlocks model
-    , div [ id "recent-blocks" ] (viewRecentBlocks model.recentBlocks)
+    , viewBlockInfo model
     ]
+
+viewBlockInfo : Model -> Html Msg
+viewBlockInfo model =
+  div [ id "block-info" ] [ div [ id "recent-blocks" ] (viewRecentBlocks model.recentBlocks) ]
 
 viewLatestBlocks : Model -> Html Msg
 viewLatestBlocks model =
   div 
-    [ id "blockNumbers" ] 
+    [ id "block-numbers-container" ]
     [ div 
-      [ class "block-number" ] 
-      [ text model.latestBlocks.latest
-      , span [ class "label" ] [ text " latest" ] ]
-    , div 
-      [ class "block-number" ] 
-      [ text model.latestBlocks.finalized
-      , span [ class "label" ] [ text " finalized" ] ]
+      [ id "block-numbers" ] 
+      [ div 
+        [ class "block-number" ] 
+        [ text model.latestBlocks.latest
+        , span [ class "label" ] [ text " latest" ] ]
+      , div 
+        [ class "block-number" ] 
+        [ text model.latestBlocks.finalized
+        , span [ class "label" ] [ text " finalized" ] ]
+      ]
     ]
 
 viewRecentBlocks : List (String, String) -> List (Html Msg)
