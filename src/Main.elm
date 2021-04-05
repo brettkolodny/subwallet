@@ -2,8 +2,9 @@ port module Main exposing (..)
 
 import Browser
 import Html exposing (Html, div, img, text, span)
+import Html.Keyed as Keyed
 import Html.Events exposing (onClick)
-import Html.Attributes as Attr exposing (id, src, class)
+import Html.Attributes exposing (id, src, class)
 
 
 -- MAIN
@@ -22,7 +23,17 @@ main =
 type alias Blocks = { latest : String, finalized : String, author : String }
 port newBlocks : (Blocks -> msg) -> Sub msg
 
+port newEvents : ((List Event) -> msg) -> Sub msg
+
 -- MODEL
+
+type alias Event = 
+  { to: String
+  , from: String
+  , amount: String
+  , key: String
+  }
+
 type CurrentPage = 
   Explorer
   | Wallet
@@ -34,6 +45,7 @@ type alias Assets =
   , iconWallet : String 
   , iconGovernance : String
   , iconContacts : String 
+  , iconNotification : String
   }
 
 type alias Model = 
@@ -41,6 +53,7 @@ type alias Model =
   , currentPage : CurrentPage
   , latestBlocks : Blocks
   , recentBlocks: List (String, String)
+  , events : List Event
   }
 
 init : Assets -> ( Model, Cmd Msg )
@@ -50,11 +63,13 @@ init assets =
       , iconWallet = assets.iconWallet
       , iconGovernance = assets.iconGovernance
       , iconContacts = assets.iconContacts
+      , iconNotification = assets.iconNotification
       }
     , currentPage = Explorer
     , latestBlocks =
       { latest = "Loading...", finalized = "Loading...", author = "" }
     , recentBlocks = []
+    , events = []
     }
     , Cmd.none
   )
@@ -69,6 +84,7 @@ type Msg =
   | ContactsPage
   | GovernancePage
   | NewBlock Blocks
+  | NewEvents (List Event)
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -101,8 +117,15 @@ update msg model =
           , finalized = blocks.finalized 
           , author = ""
           }
-        , recentBlocks = (blocks.latest, blocks.author) :: model.recentBlocks
+        , recentBlocks = 
+            (blocks.latest, blocks.author) :: model.recentBlocks
+            |> List.take 6
         }
+      , Cmd.none
+      )
+
+    NewEvents events ->
+      ( { model | events = events ++ model.events |> List.take 5 }
       , Cmd.none
       )
 
@@ -175,7 +198,13 @@ viewExplorerPage model =
 
 viewBlockInfo : Model -> Html Msg
 viewBlockInfo model =
-  div [ id "block-info" ] [ div [ id "recent-blocks" ] (viewRecentBlocks model.recentBlocks) ]
+  div 
+  [ id "block-info" ] 
+    [ div 
+      [ id "recent-blocks" ] 
+      (viewRecentBlocks model.recentBlocks) 
+    , viewEvents model
+    ]
 
 viewLatestBlocks : Model -> Html Msg
 viewLatestBlocks model =
@@ -205,6 +234,61 @@ viewRecentBlocks recentBlocks =
         ]
     ) 
     recentBlocks
+
+viewEvents : Model -> Html Msg
+viewEvents model =
+  Keyed.node 
+    "div" 
+    [ id "recent-events" ] 
+    ( List.map 
+      ( viewEvent model.assets.iconNotification ) 
+      model.events 
+    )
+
+viewEvent : String -> Event -> (String, Html Msg)
+viewEvent srcString event =
+  ( event.key
+  , div
+    [ class "event" ]
+    [ img [ src srcString ] []
+    , div
+        [ class "event-details" ]
+        [ div 
+            [ class "event-name" ] 
+            [ text "Transfer: "
+            , span 
+                [ class "amount" ] 
+                [ text event.amount ] 
+            ]
+        , div [ class "event-data" ] [ text event.to ] 
+        , div [ class "event-data" ] [ text event.from ]
+        ]
+    ]
+  )
+
+viewRecentEvents : Model -> List (Html Msg)
+viewRecentEvents model =
+  List.map 
+    (\eventInfo -> 
+      Keyed.node
+        "div"
+        [ class "event" ] 
+        [ (eventInfo.key, img [ src model.assets.iconNotification ] [])
+        , (eventInfo.key, div 
+            [ class "event-details" ]
+            [ div 
+                [ class "event-name" ] 
+                [ text "Transfer: "
+                , span 
+                    [ class "amount" ] 
+                    [ text eventInfo.amount ] 
+                ]
+            , div [ class "event-data" ] [ text eventInfo.to ] 
+            , div [ class "event-data" ] [ text eventInfo.from ]
+            ])
+        ]
+    )
+    model.events
   |> List.take 6
 
 
@@ -212,4 +296,7 @@ viewRecentBlocks recentBlocks =
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-  newBlocks NewBlock
+  Sub.batch 
+    [ newBlocks NewBlock 
+    , newEvents NewEvents
+    ]

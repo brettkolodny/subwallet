@@ -6,6 +6,12 @@ const iconExplorer = require("../assets/icon-explorer.svg");
 const iconWallet = require("../assets/icon-wallet.svg");
 const iconContacts = require("../assets/icon-contacts.svg");
 const iconGovernance = require("../assets/icon-governance.svg");
+const iconNotification = require("../assets/icon-notification.svg");
+
+let newBlocksSub = null;
+let eventsSub = null;
+
+let eventKey = 0;
 
 async function start() {
   const wsProvider = new WsProvider('wss://rpc.polkadot.io');
@@ -15,7 +21,8 @@ async function start() {
     iconExplorer: iconExplorer,
     iconWallet: iconWallet,
     iconContacts: iconContacts,
-    iconGovernance: iconGovernance
+    iconGovernance: iconGovernance,
+    iconNotification: iconNotification
   };
   
   const app = Elm.Main.init({
@@ -23,7 +30,7 @@ async function start() {
     flags: assets
   })
   
-  const unsub = await api.query.system.number(async (blockNumber) => {
+  newBlocksSub = await api.query.system.number(async (blockNumber) => {
     const hash = await api.rpc.chain.getFinalizedHead();
     const finalizedBlock = await api.rpc.chain.getBlock(hash);
     const finBlockNum = finalizedBlock.block.header.number.toHuman();
@@ -32,9 +39,28 @@ async function start() {
       { 
         latest: blockNumber.toHuman(), 
         finalized: finBlockNum,
-        author: "12345"
+        author: "12345",
       });
   });
+
+  eventsSub = await api.query.system.events((events) => {
+    const newEvents = [];
+
+    for (const event of events) {
+      const eventFormatted = event.toHuman().event;
+
+      if (eventFormatted.method == "Transfer") {
+        newEvents.push({
+          to: eventFormatted.data[0],
+          from: eventFormatted.data[1],
+          amount: eventFormatted.data[2],
+          key: (eventKey++).toString()
+        });
+      }
+    }
+
+    if (newEvents.length > 0) app.ports.newEvents.send(newEvents);
+  })
 }
 
 start();
