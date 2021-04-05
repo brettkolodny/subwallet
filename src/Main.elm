@@ -9,7 +9,7 @@ import Html.Attributes exposing (id, src, class)
 
 -- MAIN
 
-main : Program Assets Model Msg
+main : Program Flags Model Msg
 main =
   Browser.element
     { init = init
@@ -21,11 +21,31 @@ main =
 
 -- PORTS
 type alias Blocks = { latest : String, finalized : String, author : String }
+
 port newBlocks : (Blocks -> msg) -> Sub msg
 
 port newEvents : ((List Event) -> msg) -> Sub msg
 
+port changeNetwork : String -> Cmd msg
+
+
+-- SUBSCRIPTIONS
+
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+  Sub.batch 
+    [ newBlocks NewBlock 
+    , newEvents NewEvents
+    ]
+
+
 -- MODEL
+
+type alias Network = 
+  { name : String
+  , endpoint : String
+  , logo : String
+  }
 
 type alias Event = 
   { to: String
@@ -48,28 +68,36 @@ type alias Assets =
   , iconNotification : String
   }
 
+type alias Flags =
+  { assets : Assets
+  , networks : List Network
+  }
+
 type alias Model = 
   { assets : Assets
   , currentPage : CurrentPage
   , latestBlocks : Blocks
   , recentBlocks: List (String, String)
   , events : List Event
+  , showNetworks : Bool
+  , networks : List Network
+  , currentNetwork : Network
   }
 
-init : Assets -> ( Model, Cmd Msg )
-init assets =
-  ( { assets = 
-      { iconExplorer = assets.iconExplorer
-      , iconWallet = assets.iconWallet
-      , iconGovernance = assets.iconGovernance
-      , iconContacts = assets.iconContacts
-      , iconNotification = assets.iconNotification
-      }
+init : Flags -> ( Model, Cmd Msg )
+init flags =
+  ( { assets = flags.assets
     , currentPage = Explorer
     , latestBlocks =
       { latest = "Loading...", finalized = "Loading...", author = "" }
     , recentBlocks = []
     , events = []
+    , showNetworks = False
+    , networks = flags.networks
+    , currentNetwork = 
+        case List.head flags.networks of
+          Just n -> n
+          Nothing -> { name = "", endpoint = "", logo = "" }
     }
     , Cmd.none
   )
@@ -85,6 +113,8 @@ type Msg =
   | GovernancePage
   | NewBlock Blocks
   | NewEvents (List Event)
+  | ToggleNetworks
+  | SwitchNetwork Network
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -129,13 +159,31 @@ update msg model =
       , Cmd.none
       )
 
+    ToggleNetworks ->
+      ( { model | showNetworks = not model.showNetworks }
+      , Cmd.none
+      )
+
+    SwitchNetwork network ->
+      ( { model | 
+        currentNetwork = network
+        , events = []
+        , latestBlocks = 
+          { latest = "Loading...", finalized = "Loading...", author = "" }
+        , recentBlocks = []
+        , showNetworks = False
+        }
+      , changeNetwork network.endpoint
+      )
+
 
 -- VIEW
 
 view : Model -> Html Msg
 view model =
   div [ id "app" ]
-    [ viewSidebar model 
+    [ viewNetworkSwitcher model
+    , viewSidebar model 
     , (case model.currentPage of
         Explorer -> viewExplorerPage model
 
@@ -266,37 +314,36 @@ viewEvent srcString event =
     ]
   )
 
-viewRecentEvents : Model -> List (Html Msg)
-viewRecentEvents model =
-  List.map 
-    (\eventInfo -> 
-      Keyed.node
-        "div"
-        [ class "event" ] 
-        [ (eventInfo.key, img [ src model.assets.iconNotification ] [])
-        , (eventInfo.key, div 
-            [ class "event-details" ]
-            [ div 
-                [ class "event-name" ] 
-                [ text "Transfer: "
-                , span 
-                    [ class "amount" ] 
-                    [ text eventInfo.amount ] 
-                ]
-            , div [ class "event-data" ] [ text eventInfo.to ] 
-            , div [ class "event-data" ] [ text eventInfo.from ]
-            ])
-        ]
-    )
-    model.events
-  |> List.take 6
 
+-- NETWORK VIEW
 
--- SUBSCRIPTIONS
-
-subscriptions : Model -> Sub Msg
-subscriptions _ =
-  Sub.batch 
-    [ newBlocks NewBlock 
-    , newEvents NewEvents
+viewNetworkSwitcher : Model -> Html Msg
+viewNetworkSwitcher model =
+  div 
+    [ id "network-picker" ]
+    [ img
+      [ src model.currentNetwork.logo
+      , onClick ToggleNetworks
+      ]
+      []
+    , ( if model.showNetworks then 
+          viewNetworkList model
+        else
+          div [] []
+      )
     ]
+
+viewNetworkList : Model -> Html Msg
+viewNetworkList model =
+  div 
+    [ id "network-list" ] 
+    ( List.map 
+        (\network -> 
+          img 
+            [ src network.logo 
+            , onClick (SwitchNetwork network)
+            ] 
+            []
+        )
+        model.networks
+    )
