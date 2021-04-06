@@ -1,5 +1,10 @@
 import { Elm } from "./Main.elm";
 import { ApiPromise, WsProvider } from "@polkadot/api";
+import {
+  web3Accounts,
+  web3Enable,
+  web3FromAddress,
+} from "@polkadot/extension-dapp";
 import "regenerator-runtime/runtime";
 import networks from "./networks";
 
@@ -16,6 +21,7 @@ const assets = {
   iconGovernance: iconGovernance,
   iconNotification: iconNotification,
 };
+
 let app = null;
 let api = null;
 
@@ -23,6 +29,19 @@ let newBlocksUnsub = null;
 let eventsUnsub = null;
 
 let eventKey = 0;
+
+async function getAccounts() {
+  await web3Enable("Subwallet");
+  const allAccounts = await web3Accounts();
+
+  return allAccounts.map((account) => {
+    return {
+      address: account.address,
+      genesisHash: account.meta.genesisHash || "",
+      name: account.meta.name,
+    };
+  });
+}
 
 async function changeNetwork(endpoint) {
   if (newBlocksUnsub) newBlocksUnsub();
@@ -44,29 +63,28 @@ async function changeNetwork(endpoint) {
   });
 
   eventsUnsub = await api.query.system.events((events) => {
-    const newEvents = [];
-
-    for (const event of events) {
-      const eventFormatted = event.toHuman().event;
-
-      if (eventFormatted.method == "Transfer") {
-        newEvents.push({
-          to: eventFormatted.data[0],
-          from: eventFormatted.data[1],
-          amount: eventFormatted.data[2],
+    let newEvents = events
+      .map((event) => event.toHuman().event)
+      .filter((event) => event.method == "Transfer")
+      .map((event) => {
+        return {
+          to: event.data[0],
+          from: event.data[1],
+          amount: event.data[2],
           key: (eventKey++).toString(),
-        });
-      }
-    }
+        };
+      });
 
     if (newEvents.length > 0) app.ports.newEvents.send(newEvents);
   });
 }
 
 async function start() {
+  const accounts = await getAccounts();
+
   app = Elm.Main.init({
     node: document.getElementById("main"),
-    flags: { assets: assets, networks: networks },
+    flags: { assets: assets, networks: networks, accounts: accounts },
   });
 
   app.ports.changeNetwork.subscribe((endpoint) => {

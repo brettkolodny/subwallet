@@ -3,6 +3,7 @@ port module Main exposing (..)
 import Browser
 import Html exposing (Html, div, img, text, span)
 import Html.Keyed as Keyed
+import Html.Lazy exposing (lazy)
 import Html.Events exposing (onClick)
 import Html.Attributes exposing (id, src, class)
 
@@ -28,7 +29,6 @@ port newEvents : ((List Event) -> msg) -> Sub msg
 
 port changeNetwork : String -> Cmd msg
 
-
 -- SUBSCRIPTIONS
 
 subscriptions : Model -> Sub Msg
@@ -45,6 +45,12 @@ type alias Network =
   { name : String
   , endpoint : String
   , logo : String
+  }
+
+type alias Account =
+  { name : String
+  , genesisHash : String
+  , address : String
   }
 
 type alias Event = 
@@ -71,6 +77,7 @@ type alias Assets =
 type alias Flags =
   { assets : Assets
   , networks : List Network
+  , accounts : List Account
   }
 
 type alias Model = 
@@ -82,6 +89,7 @@ type alias Model =
   , showNetworks : Bool
   , networks : List Network
   , currentNetwork : Network
+  , accounts : List Account
   }
 
 init : Flags -> ( Model, Cmd Msg )
@@ -98,6 +106,7 @@ init flags =
         case List.head flags.networks of
           Just n -> n
           Nothing -> { name = "", endpoint = "", logo = "" }
+    , accounts = flags.accounts
     }
     , Cmd.none
   )
@@ -165,16 +174,19 @@ update msg model =
       )
 
     SwitchNetwork network ->
-      ( { model | 
-        currentNetwork = network
-        , events = []
-        , latestBlocks = 
-          { latest = "Loading...", finalized = "Loading...", author = "" }
-        , recentBlocks = []
-        , showNetworks = False
-        }
-      , changeNetwork network.endpoint
-      )
+      if model.currentNetwork == network then
+        ( { model | showNetworks = False }, Cmd.none )
+      else
+        ( { model | 
+          currentNetwork = network
+          , events = []
+          , latestBlocks = 
+            { latest = "Loading...", finalized = "Loading...", author = "" }
+          , recentBlocks = []
+          , showNetworks = False
+          }
+        , changeNetwork network.endpoint
+        )
 
 
 -- VIEW
@@ -182,14 +194,17 @@ update msg model =
 view : Model -> Html Msg
 view model =
   div [ id "app" ]
-    [ viewNetworkSwitcher model
-    , viewSidebar model 
-    , (case model.currentPage of
-        Explorer -> viewExplorerPage model
+    [ lazy viewNetworkSwitcher model
+    , lazy viewSidebar model 
+    , viewCurrentPage model
+    ]
 
-        _ -> viewPage
-      ) ]
+viewCurrentPage : Model -> Html Msg
+viewCurrentPage model =
+  case model.currentPage of
+    Explorer -> viewExplorerPage model
 
+    _ -> div [ class "view" ] []
 
 -- SIDEBAR VIEW
 
@@ -228,10 +243,6 @@ selected currentPage model =
     "selected"
   else
     ""
-
-viewPage : Html Msg
-viewPage =
-  div [ class "view" ] []
 
 
 -- EXPLORER VIEW
