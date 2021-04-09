@@ -90,6 +90,8 @@ type alias Model =
   , networks : List Network
   , currentNetwork : Network
   , accounts : List Account
+  , currentAccount : Maybe Account
+  , showAccounts : Bool
   }
 
 init : Flags -> ( Model, Cmd Msg )
@@ -107,6 +109,8 @@ init flags =
           Just n -> n
           Nothing -> { name = "", endpoint = "", logo = "" }
     , accounts = flags.accounts
+    , currentAccount = List.head flags.accounts
+    , showAccounts = False
     }
     , Cmd.none
   )
@@ -124,6 +128,8 @@ type Msg =
   | NewEvents (List Event)
   | ToggleNetworks
   | SwitchNetwork Network
+  | ToggleAccounts
+  | SetCurrentAccount Account
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -177,8 +183,7 @@ update msg model =
       if model.currentNetwork == network then
         ( { model | showNetworks = False }, Cmd.none )
       else
-        ( { model | 
-          currentNetwork = network
+        ( { model | currentNetwork = network
           , events = []
           , latestBlocks = 
             { latest = "Loading...", finalized = "Loading...", author = "" }
@@ -188,6 +193,18 @@ update msg model =
         , changeNetwork network.endpoint
         )
 
+    ToggleAccounts ->
+      ( { model | showAccounts = not model.showAccounts }
+      , Cmd.none
+      )
+
+    SetCurrentAccount account ->
+      ( { model | currentAccount = Just account 
+        , showAccounts = False
+        }
+      , Cmd.none
+      )
+
 
 -- VIEW
 
@@ -195,6 +212,7 @@ view : Model -> Html Msg
 view model =
   div [ id "app" ]
     [ lazy viewNetworkSwitcher model
+    , viewAccountPicker model
     , lazy viewSidebar model 
     , viewCurrentPage model
     ]
@@ -358,3 +376,45 @@ viewNetworkList model =
         )
         model.networks
     )
+
+
+-- Account View
+viewAccountPicker : Model -> Html Msg
+viewAccountPicker model =
+  div 
+    [ id "account-picker" ] 
+    [ div
+      [ id "current-account" 
+      , onClick ToggleAccounts
+      ] 
+      [ div 
+        [ id "balance" ] [] 
+      , div 
+        [ id "account-info"] 
+        [ text 
+            (case model.currentAccount of
+              Just account -> account.name
+              Nothing -> "No Accounts"
+            )
+        ]
+      ]
+    , if model.showAccounts then
+        viewAccountsList model.accounts
+      else
+        div [] []
+    ]
+
+viewAccountsList : List Account -> Html Msg
+viewAccountsList accounts =
+  div 
+  [ id "account-list" ]
+  ( List.map 
+    ( \account -> 
+        div 
+          [ class "account-card" 
+          , onClick (SetCurrentAccount account)
+          ] 
+          [ text account.name ]
+    ) 
+    accounts
+  )

@@ -81,6 +81,7 @@ async function changeNetwork(endpoint) {
 
 async function start() {
   const accounts = await getAccounts();
+  console.log(accounts);
 
   app = Elm.Main.init({
     node: document.getElementById("main"),
