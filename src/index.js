@@ -33,6 +33,7 @@ let eventKey = 0;
 async function getAccounts() {
   await web3Enable("Subwallet");
   const allAccounts = await web3Accounts();
+  console.log(allAccounts);
 
   return allAccounts.map((account) => {
     return {

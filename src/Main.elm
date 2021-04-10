@@ -44,6 +44,7 @@ subscriptions _ =
 type alias Network = 
   { name : String
   , endpoint : String
+  , genesisHash : String
   , logo : String
   }
 
@@ -107,7 +108,7 @@ init flags =
     , currentNetwork = 
         case List.head flags.networks of
           Just n -> n
-          Nothing -> { name = "", endpoint = "", logo = "" }
+          Nothing -> { name = "", endpoint = "", logo = "", genesisHash = ""}
     , accounts = flags.accounts
     , currentAccount = List.head flags.accounts
     , showAccounts = False
@@ -365,8 +366,8 @@ viewNetworkSwitcher model =
 viewNetworkList : Model -> Html Msg
 viewNetworkList model =
   div 
-    [ id "network-list" ] 
-    ( List.map 
+    [ id "network-list" ]
+      ( List.map 
         (\network -> 
           img 
             [ src network.logo 
@@ -399,22 +400,27 @@ viewAccountPicker model =
         ]
       ]
     , if model.showAccounts then
-        viewAccountsList model.accounts
+        viewAccountsList model
       else
         div [] []
     ]
 
-viewAccountsList : List Account -> Html Msg
-viewAccountsList accounts =
+viewAccountsList : Model -> Html Msg
+viewAccountsList model =
   div 
   [ id "account-list" ]
-  ( List.map 
+  ( ( List.filter 
+      ( \account ->
+          account.genesisHash == model.currentNetwork.genesisHash || account.genesisHash == ""
+      )
+      model.accounts
+    )
+  |> List.map 
     ( \account -> 
         div 
           [ class "account-card" 
           , onClick (SetCurrentAccount account)
           ] 
           [ text account.name ]
-    ) 
-    accounts
+    )
   )
