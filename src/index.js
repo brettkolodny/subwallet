@@ -27,6 +27,7 @@ let api = null;
 
 let newBlocksUnsub = null;
 let eventsUnsub = null;
+let balanceUnsub = null;
 
 let eventKey = 0;
 
@@ -50,6 +51,8 @@ async function changeNetwork(endpoint) {
 
   const wsProvider = new WsProvider(endpoint);
   api = await ApiPromise.create({ provider: wsProvider });
+
+  app.ports.networkChanged.send(0);
 
   newBlocksUnsub = await api.query.system.number(async (blockNumber) => {
     const hash = await api.rpc.chain.getFinalizedHead();
@@ -80,6 +83,27 @@ async function changeNetwork(endpoint) {
   });
 }
 
+async function changeAccount(address) {
+  if (!address) return
+  if (balanceUnsub) balanceUnsub();
+
+  balanceUnsub = await api.query.system.account(address, ({ data: balance }) => {
+    app.ports.balanceChange.send(balance.free.toHuman());
+  });
+}
+
+async function init(address) {
+  app.ports.changeNetwork.subscribe((endpoint) => {
+    changeNetwork(endpoint);
+  })
+
+  app.ports.changeAccount.subscribe((address) => {
+    changeAccount(address);
+  })
+
+  await changeNetwork("wss://rpc.polkadot.io");
+}
+
 async function start() {
   const accounts = await getAccounts();
   console.log(accounts);
@@ -89,11 +113,9 @@ async function start() {
     flags: { assets: assets, networks: networks, accounts: accounts },
   });
 
-  app.ports.changeNetwork.subscribe((endpoint) => {
-    changeNetwork(endpoint);
-  });
-
-  changeNetwork("wss://rpc.polkadot.io");
+  app.ports.initialized.subscribe((address) => {
+    init(address);
+  })
 }
 
 start();

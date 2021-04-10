@@ -29,6 +29,14 @@ port newEvents : ((List Event) -> msg) -> Sub msg
 
 port changeNetwork : String -> Cmd msg
 
+port networkChanged : (Int -> msg) -> Sub msg
+
+port changeAccount : String -> Cmd msg
+
+port balanceChange : (String -> msg) -> Sub msg
+
+port initialized : String -> Cmd msg
+
 -- SUBSCRIPTIONS
 
 subscriptions : Model -> Sub Msg
@@ -36,6 +44,8 @@ subscriptions _ =
   Sub.batch 
     [ newBlocks NewBlock 
     , newEvents NewEvents
+    , balanceChange BalanceChange
+    , networkChanged NetworkChanged
     ]
 
 
@@ -92,6 +102,7 @@ type alias Model =
   , currentNetwork : Network
   , accounts : List Account
   , currentAccount : Maybe Account
+  , currentBalance : Maybe String
   , showAccounts : Bool
   }
 
@@ -110,11 +121,24 @@ init flags =
           Just n -> n
           Nothing -> { name = "", endpoint = "", logo = "", genesisHash = ""}
     , accounts = flags.accounts
-    , currentAccount = List.head flags.accounts
+    , currentAccount = getCurrentAccount flags.networks flags.accounts
     , showAccounts = False
+    , currentBalance = Nothing
     }
-    , Cmd.none
+    , initialized
+        (case getCurrentAccount flags.networks flags.accounts of
+           Just a -> a.address
+           Nothing -> "")
   )
+
+getCurrentAccount : List Network -> List Account -> Maybe Account
+getCurrentAccount networks accounts =
+  Maybe.andThen 
+    (\n -> 
+      List.filter (\account -> account.genesisHash == n.genesisHash || account.genesisHash == "") accounts
+      |> List.head
+    ) 
+    (List.head networks)
 
 
 -- UPDATE
@@ -131,6 +155,8 @@ type Msg =
   | SwitchNetwork Network
   | ToggleAccounts
   | SetCurrentAccount Account
+  | BalanceChange String
+  | NetworkChanged Int
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -190,10 +216,12 @@ update msg model =
             { latest = "Loading...", finalized = "Loading...", author = "" }
           , recentBlocks = []
           , showNetworks = False
+          , currentAccount = getCurrentAccount [network] model.accounts
+          , currentBalance = Nothing
           }
         , changeNetwork network.endpoint
         )
-
+        
     ToggleAccounts ->
       ( { model | showAccounts = not model.showAccounts }
       , Cmd.none
@@ -202,10 +230,22 @@ update msg model =
     SetCurrentAccount account ->
       ( { model | currentAccount = Just account 
         , showAccounts = False
+        , currentBalance = Nothing
         }
+      , changeAccount account.address
+      )
+
+    BalanceChange balance ->
+      ( { model | currentBalance = Just balance }
       , Cmd.none
       )
 
+    NetworkChanged _ ->
+      ( model
+      , changeAccount (case model.currentAccount of
+          Just a -> a.address
+          Nothing -> "")
+      )
 
 -- VIEW
 
@@ -389,7 +429,7 @@ viewAccountPicker model =
       , onClick ToggleAccounts
       ] 
       [ div 
-        [ id "balance" ] [] 
+        [ id "balance" ] [ getBalance model.currentBalance |> text ] 
       , div 
         [ id "account-info"] 
         [ text 
@@ -404,6 +444,12 @@ viewAccountPicker model =
       else
         div [] []
     ]
+
+getBalance : Maybe String -> String
+getBalance balance =
+  case balance of
+     Just b -> b
+     Nothing -> "..."
 
 viewAccountsList : Model -> Html Msg
 viewAccountsList model =
